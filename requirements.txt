@@ -2,3 +2,4 @@ python-telegram-bot
 google-generativeai
 pymongo
 python-dotenv
+flask
