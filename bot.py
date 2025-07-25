@@ -8,7 +8,6 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import google.generativeai as genai
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from flask import Flask, request # Import Flask
 
 # Configure logging
 logging.basicConfig(
@@ -20,16 +19,15 @@ logger = logging.getLogger(__name__)
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
-PORT = 10000
 
 # --- MongoDB Setup ---
 try:
     if not MONGO_PASSWORD:
         raise ValueError("MONGO_PASSWORD environment variable not set!")
-
+    
     uri = f"mongodb+srv://rambo:{MONGO_PASSWORD}@sous-chef-ai-telegram-b.wc6o1qa.mongodb.net/?retryWrites=true&w=majority&appName=Sous-Chef-AI-Telegram-Bot"
     client = MongoClient(uri)
-
+    
     # Ping to confirm connection
     client.admin.command('ping')
     db = client['sous_chef_ai_db']
@@ -86,7 +84,7 @@ class RecipeBot:
 
     def create_recipe_prompt(self, ingredients, health_stats, dietary_restrictions, allergies):
         """Create a detailed prompt for the AI based on user inputs"""
-
+        
         prompt = f"""
         You are a professional nutritionist and chef. Create a detailed, healthy recipe using the following information:
 
@@ -94,22 +92,22 @@ class RecipeBot:
 
         HEALTH CONSIDERATIONS:
         """
-
+        
         if health_stats.get('blood_pressure'):
             prompt += f"- Blood Pressure: {health_stats['blood_pressure']} (recommend low-sodium options)\n"
-
+        
         if health_stats.get('blood_sugar'):
             prompt += f"- Blood Sugar Level: {health_stats['blood_sugar']} (recommend low-glycemic options)\n"
-
+        
         if health_stats.get('cholesterol'):
             prompt += f"- Cholesterol Level: {health_stats['cholesterol']} (recommend heart-healthy options)\n"
-
+        
         if dietary_restrictions:
             prompt += f"- Dietary Restrictions: {dietary_restrictions}\n"
-
+        
         if allergies:
             prompt += f"- Allergies: {allergies}\n"
-
+        
         prompt += """
         IMPORTANT: Please respond ONLY with valid JSON format. No additional text, explanations, or formatting outside the JSON structure.
 
@@ -161,7 +159,7 @@ class RecipeBot:
 
         Make sure the recipe is tailored to the health conditions and dietary needs mentioned above.
         """
-
+        
         return prompt
 
     def escape_markdown(self, text):
@@ -177,80 +175,80 @@ class RecipeBot:
     def format_recipe_message(self, recipe_data):
         """Format recipe data for Telegram message"""
         recipe = recipe_data['recipe']
-
+        
         message = f"🍳 *{self.escape_markdown(recipe['name'])}*\n\n"
-
+        
         # Recipe info
         message += f"⏱️ *Prep:* {self.escape_markdown(recipe['prep_time'])}\n"
         message += f"🔥 *Cook:* {self.escape_markdown(recipe['cook_time'])}\n"
         message += f"⏰ *Total:* {self.escape_markdown(recipe['total_time'])}\n"
         message += f"🍽️ *Serves:* {self.escape_markdown(recipe['servings'])}\n\n"
-
+        
         # Ingredients
         message += "🥘 *Ingredients:*\n"
         for ingredient in recipe['ingredients']:
             message += f"• {self.escape_markdown(ingredient)}\n"
         message += "\n"
-
+        
         # Instructions
         message += "👨‍🍳 *Instructions:*\n"
         for i, instruction in enumerate(recipe['instructions'], 1):
             message += f"{i}\\. {self.escape_markdown(instruction)}\n"
         message += "\n"
-
+        
         # Health tips
         if recipe.get('health_tips'):
             message += "💡 *Health Tips:*\n"
             for tip in recipe['health_tips']:
                 message += f"• {self.escape_markdown(tip)}\n"
             message += "\n"
-
+        
         # Storage
         if recipe.get('storage'):
             message += f"🗄️ *Storage:* {self.escape_markdown(recipe['storage'])}\n"
-
+        
         return message
 
     def format_nutrition_message(self, recipe_data):
         """Format nutrition data for Telegram message"""
         nutrition = recipe_data['nutritional_info']
-
+        
         message = "📊 *Nutritional Information*\n"
         message += "Per serving breakdown:\n\n"
-
+        
         message += f"🔥 *Calories:* {self.escape_markdown(nutrition['calories_per_serving'])}\n"
         message += f"🥩 *Protein:* {self.escape_markdown(nutrition['protein'])}\n"
         message += f"🍞 *Carbs:* {self.escape_markdown(nutrition['carbs'])}\n"
         message += f"🥑 *Fat:* {self.escape_markdown(nutrition['fat'])}\n"
         message += f"🌾 *Fiber:* {self.escape_markdown(nutrition['fiber'])}\n"
         message += f"🧂 *Sodium:* {self.escape_markdown(nutrition['sodium'])}\n\n"
-
+        
         if nutrition.get('health_benefits'):
             message += "🌟 *Health Benefits:*\n"
             for benefit in nutrition['health_benefits']:
                 message += f"• {self.escape_markdown(benefit)}\n"
-
+        
         return message
 
     def format_facts_message(self, recipe_data):
         """Format recipe facts for Telegram message"""
         facts = recipe_data['recipe_facts']
-
+        
         message = "🧠 *Recipe Facts*\n\n"
-
+        
         message += f"🌍 *Cuisine:* {self.escape_markdown(facts['cuisine_type'])}\n"
         message += f"📈 *Difficulty:* {self.escape_markdown(facts['difficulty'])}\n"
         message += f"🍽️ *Meal Type:* {self.escape_markdown(facts['meal_type'])}\n"
-
+        
         if facts.get('dietary_tags'):
             tags = ', '.join(facts['dietary_tags'])
             message += f"🏷️ *Tags:* {self.escape_markdown(tags)}\n\n"
-
+        
         if facts.get('fun_facts'):
             message += "🎯 *Did You Know?*\n"
             for fact in facts['fun_facts']:
                 message += f"💡 {self.escape_markdown(fact)}\n"
-
+        
         return message
 
 bot = RecipeBot()
@@ -309,12 +307,12 @@ def load_user_preferences(user_id):
     # If user data is already in the cache, no need to load again.
     if user_id in user_data:
         return user_data[user_id]
-
+    
     if users_collection is None:
         logger.warning("MongoDB not connected. Using temporary in-memory storage.")
         user_data[user_id] = {}
         return user_data[user_id]
-
+        
     try:
         prefs = users_collection.find_one({'_id': user_id})
         if prefs:
@@ -352,7 +350,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     # Load user data at the start of the conversation
     load_user_preferences(user.id)
-
+    
     welcome_message = f"""
 🍳 *Welcome to Sous-Chef AI, {user.first_name}!*
 
@@ -377,7 +375,7 @@ I'm your personal AI nutritionist and chef! I can help you create healthy, perso
 
 Let's start cooking! 🎉
     """
-
+    
     await update.message.reply_text(welcome_message, parse_mode='Markdown')
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -408,23 +406,23 @@ Just send me a message with:
 
 I'll create a personalized recipe just for you! 🍽️
     """
-
+    
     await update.message.reply_text(help_text, parse_mode='Markdown')
 
 async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle health information setup"""
     user_id = update.effective_user.id
     load_user_preferences(user_id)
-
+    
     keyboard = [
         [InlineKeyboardButton("Blood Pressure", callback_data="health_bp")],
         [InlineKeyboardButton("Blood Sugar", callback_data="health_bs")],
         [InlineKeyboardButton("Cholesterol", callback_data="health_chol")],
         [InlineKeyboardButton("Done", callback_data="health_done")]
     ]
-
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
-
+    
     await update.message.reply_text(
         "🏥 *Health Information Setup*\n\nSelect which health information you'd like to set:",
         reply_markup=reply_markup,
@@ -435,24 +433,24 @@ async def diet_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle dietary preferences setup"""
     user_id = update.effective_user.id
     load_user_preferences(user_id)
-
+    
     await update.message.reply_text(
         "🌱 *Dietary Preferences Setup*\n\n"
         "Please send me your dietary restrictions (e.g., vegetarian, vegan, keto, paleo, gluten-free)\n"
         "Or type 'none' if you don't have any restrictions.",
         parse_mode='Markdown'
     )
-
+    
     user_data[user_id]['setting'] = 'dietary_restrictions'
 
 async def clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Clear user preferences from cache and database."""
     user_id = update.effective_user.id
-
+    
     # Clear from local cache
     if user_id in user_data:
         del user_data[user_id]
-
+        
     # Clear from MongoDB
     if users_collection is not None:
         try:
@@ -471,19 +469,19 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show user's current preferences."""
     user_id = update.effective_user.id
     data = load_user_preferences(user_id)
-
+    
     # Check if there's any meaningful data to show
     meaningful_data = {k: v for k, v in data.items() if k != '_id' and v}
-
+    
     if not meaningful_data:
         await update.message.reply_text(
             "📋 You haven't set any preferences yet.\n"
             "Use /health and /diet to set your preferences."
         )
         return
-
+    
     status_text = "📋 *Your Current Preferences:*\n\n"
-
+    
     # Health info
     if any(data.get(key) for key in ['blood_pressure', 'blood_sugar', 'cholesterol']):
         status_text += "🏥 *Health Information:*\n"
@@ -497,7 +495,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chol_text = bot.health_options['cholesterol'].get(data['cholesterol'], data['cholesterol'])
             status_text += f"• Cholesterol: {bot.escape_markdown(chol_text)}\n"
         status_text += "\n"
-
+    
     # Dietary info
     if data.get('dietary_restrictions') or data.get('allergies'):
         status_text += "🌱 *Dietary Information:*\n"
@@ -505,7 +503,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             status_text += f"• Restrictions: {bot.escape_markdown(data['dietary_restrictions'])}\n"
         if data.get('allergies'):
             status_text += f"• Allergies: {bot.escape_markdown(data['allergies'])}\n"
-
+    
     try:
         await update.message.reply_text(status_text, parse_mode='MarkdownV2')
     except Exception as e:
@@ -539,13 +537,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button callbacks"""
     query = update.callback_query
     await query.answer()
-
+    
     user_id = query.from_user.id
     data = query.data
-
+    
     # Ensure user data is loaded before proceeding
     load_user_preferences(user_id)
-
+    
     if data.startswith("health_"):
         if data == "health_bp":
             keyboard = [
@@ -560,7 +558,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🩺 Select your blood pressure level:",
                 reply_markup=reply_markup
             )
-
+        
         elif data == "health_bs":
             keyboard = [
                 [InlineKeyboardButton("Normal (70-100 mg/dL)", callback_data="bs_normal")],
@@ -573,7 +571,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🩸 Select your blood sugar level:",
                 reply_markup=reply_markup
             )
-
+        
         elif data == "health_chol":
             keyboard = [
                 [InlineKeyboardButton("Normal (<200 mg/dL)", callback_data="chol_normal")],
@@ -586,10 +584,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🫀 Select your cholesterol level:",
                 reply_markup=reply_markup
             )
-
+        
         elif data == "health_done":
             await query.edit_message_text("✅ Health information setup complete!")
-
+        
         elif data == "health_back":
             keyboard = [
                 [InlineKeyboardButton("Blood Pressure", callback_data="health_bp")],
@@ -603,11 +601,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=reply_markup,
                 parse_mode='Markdown'
             )
-
+    
     # Handle health value selections
     elif data.startswith(("bp_", "bs_", "chol_")):
         health_type, value = data.split("_", 1)
-
+        
         if health_type == "bp":
             user_data[user_id]['blood_pressure'] = value
             await query.edit_message_text(f"✅ Blood pressure set to: {bot.health_options['blood_pressure'][value]}")
@@ -617,10 +615,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif health_type == "chol":
             user_data[user_id]['cholesterol'] = value
             await query.edit_message_text(f"✅ Cholesterol set to: {bot.health_options['cholesterol'][value]}")
-
+        
         # Save updated preferences to DB
         save_user_preferences(user_id, user_data[user_id])
-
+    
     # Handle recipe view buttons (from new recipe generation)
     elif data.startswith("recipe_"):
         # The recipe is stored in the cache after generation
@@ -628,7 +626,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not recipe_data:
             await query.edit_message_text("❌ No recipe data found. Please create a new recipe.")
             return
-
+        
         try:
             if data == "recipe_main":
                 message = bot.format_recipe_message(recipe_data)
@@ -638,7 +636,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='MarkdownV2')
-
+            
             elif data == "recipe_nutrition":
                 message = bot.format_nutrition_message(recipe_data)
                 keyboard = [
@@ -647,7 +645,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='MarkdownV2')
-
+            
             elif data == "recipe_facts":
                 message = bot.format_facts_message(recipe_data)
                 keyboard = [
@@ -661,15 +659,15 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Fallback without markdown
             plain_message = "❌ Error displaying recipe. Please try creating a new recipe."
             await query.edit_message_text(plain_message)
-
+            
     # Handle viewing a saved recipe from /myrecipes
     elif data.startswith("view_recipe_"):
         recipe_id_str = data.replace("view_recipe_", "")
-
+        
         if recipes_collection is None:
             await query.edit_message_text("❌ Database not connected. Cannot retrieve recipe.")
             return
-
+            
         try:
             recipe_data = recipes_collection.find_one({'_id': ObjectId(recipe_id_str)})
             if not recipe_data:
@@ -678,7 +676,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # Store it in the cache so the Nutrition/Facts buttons work
             user_data[user_id]['last_recipe'] = recipe_data
-
+            
             # Format and send the message
             message = bot.format_recipe_message(recipe_data)
             keyboard = [
@@ -716,7 +714,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Handle deleting a recipe
     elif data.startswith("delete_recipe_"):
         recipe_id_str = data.replace("delete_recipe_", "")
-
+        
         success = delete_recipe(recipe_id_str)
 
         if success:
@@ -729,41 +727,41 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming messages for setting preferences or generating recipes."""
     user_id = update.effective_user.id
     message_text = update.message.text
-
+    
     # Ensure user data is loaded for the session
     load_user_preferences(user_id)
-
+    
     # Check if user is in the process of setting preferences
     if user_data[user_id].get('setting'):
         setting_type = user_data[user_id]['setting']
-
+        
         if setting_type == 'dietary_restrictions':
             user_data[user_id]['dietary_restrictions'] = message_text if message_text.lower() != 'none' else ''
             user_data[user_id]['setting'] = 'allergies'
-
+            
             await update.message.reply_text(
                 "Great! Now please send me your allergies (e.g., nuts, dairy, shellfish, eggs)\n"
                 "Or type 'none' if you don't have any allergies."
             )
             return
-
+        
         elif setting_type == 'allergies':
             user_data[user_id]['allergies'] = message_text if message_text.lower() != 'none' else ''
             del user_data[user_id]['setting']
-
+            
             # Save all preferences to DB after the setup flow is complete
             save_user_preferences(user_id, user_data[user_id])
-
+            
             await update.message.reply_text(
                 "✅ Dietary preferences saved!\n"
                 "Now you can send me ingredients or describe what you want to cook!"
             )
             return
-
+    
     # If not setting preferences, assume the message is for recipe generation
     loading_message = random.choice(LOADING_MESSAGES)
     await update.message.reply_text(loading_message)
-
+    
     try:
         # Get user preferences from the cache
         prefs = user_data.get(user_id, {})
@@ -774,12 +772,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         dietary_restrictions = prefs.get('dietary_restrictions', '')
         allergies = prefs.get('allergies', '')
-
+        
         # Create prompt and generate recipe
         prompt = bot.create_recipe_prompt(message_text, health_stats, dietary_restrictions, allergies)
         response = model.generate_content(prompt)
         response_text = response.text.strip()
-
+        
         # Parse JSON response
         try:
             recipe_data = json.loads(response_text)
@@ -789,20 +787,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 recipe_data = json.loads(json_match.group())
             else:
                 raise Exception("Failed to parse recipe data from AI response.")
-
+        
         # Store recipe in cache for button navigation
         user_data[user_id]['last_recipe'] = recipe_data
-
+        
         # Format and send recipe
         recipe_message = bot.format_recipe_message(recipe_data)
-
+        
         keyboard = [
             [InlineKeyboardButton("💾 Save Recipe", callback_data="save_last_recipe")],
             [InlineKeyboardButton("📊 Nutrition", callback_data="recipe_nutrition"),
              InlineKeyboardButton("🧠 Facts", callback_data="recipe_facts")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-
+        
         try:
             await update.message.reply_text(
                 recipe_message,
@@ -816,35 +814,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 plain_message,
                 reply_markup=reply_markup
             )
-
+        
     except Exception as e:
         logger.error(f"Error generating recipe: {e}")
         await update.message.reply_text(
             "❌ Sorry, I couldn't generate a recipe right now. Please try again with different ingredients or check if your message is clear."
         )
 
-# Initialize Flask app
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    """Simple home route for health check."""
-    return "Sous-Chef AI Telegram Bot is running!", 200
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    """
-    This webhook is not strictly needed if using long polling,
-    but it's a common pattern for Telegram bots.
-    If you switch to webhook mode, you'd configure Telegram to send updates here.
-    For now, it just acknowledges requests.
-    """
-    return "OK", 200
-
-def run_bot():
-    """Run the bot's polling mechanism."""
+def main():
+    """Run the bot"""
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-
+    
     # Add handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
@@ -855,31 +835,10 @@ def run_bot():
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CallbackQueryHandler(button_callback))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    # Run the bot in a separate thread or process if needed, or simply run polling
-    # For Render, running polling directly within the main process is usually fine
-    # as the Flask app is mainly for satisfying the port requirement.
-    print("🤖 Sous-Chef AI Telegram Bot is starting polling...")
+    
+    # Run the bot
+    print("🤖 Sous-Chef AI Telegram Bot is starting...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    # Start the Flask app in a separate thread or use a process manager like Gunicorn
-    # For a simple setup on Render, you can just run Flask and let it block.
-    # The Telegram bot polling will run in the same process.
-    # This setup is basic and might not be ideal for high-traffic bots.
-    # For production, consider using a proper WSGI server (like Gunicorn) and
-    # running the bot polling in a separate worker or process.
-
-    # This will run the Flask app and the bot polling in the same thread,
-    # which is generally not recommended for production but works for simple cases
-    # and satisfies Render's port requirement.
-    # A better approach for production would be to use a process manager like Gunicorn
-    # and run the bot polling in a separate worker.
-
-    import threading
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.start()
-
-    print(f"🚀 Flask app starting on port {PORT} for Render health checks...")
-    app.run(host='0.0.0.0', port=PORT)
-
+    main()
