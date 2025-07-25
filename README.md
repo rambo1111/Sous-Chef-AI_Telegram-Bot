@@ -1,15 +1,23 @@
 <h1 align="center">👨‍🍳 Sous-Chef AI</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Telegram-Bot-blue?logo=telegram" />
-  <img src="https://img.shields.io/badge/MongoDB-Connected-green?logo=mongodb" />
-  <img src="https://img.shields.io/badge/Deployed%20on-Render-orange?logo=render" />
-  <img src="https://img.shields.io/badge/License-Unlicense-lightgrey" />
+  <a href="https://t.me/Sous_Chef_AI_bot">
+    <img src="https://img.shields.io/badge/Telegram-Bot-blue?logo=telegram" />
+  </a>
+  <a href="https://www.mongodb.com/atlas/database">
+    <img src="https://img.shields.io/badge/MongoDB-Connected-green?logo=mongodb" />
+  </a>
+  <a href="https://render.com/">
+    <img src="https://img.shields.io/badge/Deployed%20on-Render-orange?logo=render" />
+  </a>
+  <a href="https://unlicense.org/">
+    <img src="https://img.shields.io/badge/License-Unlicense-lightgrey" />
+  </a>
 </p>
 
+
 <p align="center">
-  🍽️ Your personal AI chef and nutritionist — built with Gemini, MongoDB, and ❤️ <br>
-  🤖 <a href="https://t.me/Sous_Chef_AI_bot">Try the Bot on Telegram</a>
+  🍽️ Your personal AI chef and nutritionist — built with Gemini, MongoDB, and ❤️.
 </p>
 
 ---
