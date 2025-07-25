@@ -56,7 +56,7 @@ LOADING_MESSAGES = [
 
 # Configure Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # User data cache (data will be loaded from MongoDB into this dictionary)
 user_data = {}
