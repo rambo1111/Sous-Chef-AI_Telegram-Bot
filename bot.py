@@ -16,11 +16,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- Bot and API Configuration ---
-TELEGRAM_BOT_TOKEN = "8073879273:AAH0chZNZwCA8D_9Av3cw_qjT9QeNogbeIY"
-# GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_API_KEY = "AIzaSyB8nmM8gR0qJduGY_350q8Wf_Lt74Goks0"
-# MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
-MONGO_PASSWORD = "rambo"
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
 
 # --- MongoDB Setup ---
 try:
